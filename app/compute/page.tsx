@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface ServiceCardProps {
   badge: string;
   badgeClass: string;
@@ -98,7 +100,9 @@ export default function Compute() {
         <div className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
             <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded">Container</span>
-            <span className="text-[15px] font-semibold text-gray-900">ECS</span>
+            <span className="text-[15px] font-semibold text-gray-900">
+                <Link href="/ecs">ECS</Link>
+            </span>
           </div>
           <p className="text-sm text-gray-600 mb-3">
             AWS:s egna container-orkestrerare. Kör Docker-containers på EC2 eller Fargate.

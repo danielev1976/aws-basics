@@ -17,27 +17,26 @@ const navItems = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-
   return (
-    <>
-      <nav className="fixed top-0 left-0 right-0 z-50 h-20 ">
-        <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
-          {/* LEFT */}
-          <div className="flex flex-col items-start gap-1 w-full">
-            <div className="bg-[#232F3E] rounded-2xl px-8 py-10 mb-10 relative overflow-hidden">
-              <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[#FF9900] opacity-10" />
-              <div className="absolute -bottom-8 left-[40%] w-36 h-36 rounded-full bg-[#1A73C8] opacity-10" />
-              <div className="relative">
-                <span className="inline-block bg-[#FF9900] text-[#232F3E] text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded mb-4">
-                  AWS · Lektionsmaterial
-                </span>
-                <h1 className="text-3xl font-bold text-white mb-3">
-                  Introduktion till <span className="text-[#FF9900]">AWS</span>
-                </h1>
-              </div>
-            </div>
-          </div>
+    <nav className="fixed top-0 left-0 right-0 bg-[#232F3E] px-8 py-10 mb-10  overflow-hidden z-50">
+      <div className="absolute -top-12 -right-12 w-48 h-36 rounded-full bg-[#FF9900] opacity-10" />
+      <div className="absolute -bottom-8 left-[40%] w-36 h-36 rounded-full bg-[#1A73C8] opacity-10" />
 
+      <div className="flex justify-between items-center relative px-36">
+        <div className="relative">
+          <span className="inline-block bg-[#FF9900] text-[#232F3E] text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded mb-4">
+            AWS · Lektionsmaterial
+          </span>
+          <h1 className="text-3xl font-bold text-white mb-3">
+            Introduktion till <span className="text-[#FF9900]">AWS</span>
+          </h1>
+          <p className="text-[#a0aec0] text-sm max-w-lg leading-relaxed">
+            Välj ett område nedan för att läsa om AWS-tjänster
+          </p>
+        </div>
+
+        {/* -- Hamburgermenu right side -- */}
+        <div>
           {/* RIGHT: Menu button */}
           <button
             onClick={() => setOpen((v) => !v)}
@@ -62,7 +61,7 @@ export default function Navbar() {
             />
           </button>
         </div>
-      </nav>
+      </div>
 
       {/* Overlay */}
       {open && (
@@ -92,6 +91,6 @@ export default function Navbar() {
           ))}
         </ul>
       </aside>
-    </>
+    </nav>
   );
 }

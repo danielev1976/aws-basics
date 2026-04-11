@@ -41,24 +41,8 @@ function NavCard({ href, badge, badgeClass, title, description, topics, accentCo
 
 export default function Home() {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-4xl mx-auto px-6 py-52 ">
 
-      {/* Hero */}
-      <div className="bg-[#232F3E] rounded-2xl px-8 py-10 mb-10 relative overflow-hidden">
-        <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[#FF9900] opacity-10" />
-        <div className="absolute -bottom-8 left-[40%] w-36 h-36 rounded-full bg-[#1A73C8] opacity-10" />
-        <div className="relative">
-          <span className="inline-block bg-[#FF9900] text-[#232F3E] text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded mb-4">
-            AWS · Lektionsmaterial
-          </span>
-          <h1 className="text-3xl font-bold text-white mb-3">
-            Introduktion till <span className="text-[#FF9900]">AWS</span>
-          </h1>
-          <p className="text-[#a0aec0] text-sm max-w-lg leading-relaxed">
-            Välj ett område nedan för att läsa om AWS-tjänster inom Compute, Storage och Networking — eller testa dina kunskaper i quizet.
-          </p>
-        </div>
-      </div>
 
       {/* Cards grid */}
       <div className="grid grid-cols-2 gap-5">

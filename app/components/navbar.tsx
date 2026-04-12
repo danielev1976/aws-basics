@@ -5,14 +5,17 @@ import Link from "next/link";
 
 const navItems = [
   { label: "Home", href: "/" },
-  { label: "Vecka 1 - Molngrunder", href: "/molngrunder" },
-  { label: "Vecka 2 - IAM", href: "/iam" },
-  { label: "Vecka 3 - Lambda", href: "/lambda" },
-  { label: "Vecka 4 - DynamoDB", href: "/dynamodb" },
-  { label: "Vecka 5 - Frontend S3", href: "/frontend-s3" },
-  { label: "Vecka 6 - Spring Boot", href: "/spring-boot" },
-  { label: "Vecka 7 - CI/CD", href: "/ci-cd" },
-  { label: "Vecka 8 - Examination", href: "/examination" },
+  { label: "Molngrunder", href: "/molngrunder" },
+  { label: "IAM", href: "/iam" },
+  { label: "EC2", href: "/ec2" },
+  { label: "S3", href: "/s3" },
+  { label: "RDS", href: "/rds" },
+  {label: "Networking", href: "/networking"},
+  { label: "Lambda", href: "/lambda" },
+  { label: "DynamoDB", href: "/dynamodb" },
+  { label: "Frontend S3", href: "/frontend-s3" },
+  { label: "CI/CD", href: "/ci-cd" },
+  { label: "Load Balancer", href: "/loadbalancer" },
 ];
 
 export default function Navbar() {

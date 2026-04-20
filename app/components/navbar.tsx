@@ -16,6 +16,7 @@ const navItems = [
   { label: "Frontend S3", href: "/frontend-s3" },
   { label: "CI/CD", href: "/ci-cd" },
   { label: "Load Balancer", href: "/loadbalancer" },
+  { label: "Lambda som proxy", href: "/lambda-proxy" },
 ];
 
 export default function Navbar() {

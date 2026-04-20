@@ -117,7 +117,7 @@ function Divider() {
 
 export default function EC2Page() {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-4xl mx-auto px-6 py-52">
 
       {/* Hero */}
       <div className="mb-8">

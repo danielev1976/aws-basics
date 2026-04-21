@@ -144,6 +144,104 @@ function Divider() {
   return <hr className="border-0 border-t border-gray-200 my-8" />;
 }
 
+const createRecipeCode = `import axios from "axios";
+const BACKEND = \`http://\${process.env.EC2_PRIVATE_IP}:8080/api\`;
+export const handler = async (event) => {
+  const body = JSON.parse(event.body ?? "{}");
+  const {
+    name,
+    description,
+    ingredients,
+    instructions,
+    prepTime,
+    servings
+  } = body;
+  if (!name || !ingredients || !instructions) {
+    return {
+      statusCode: 400,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        error: "name, ingredients and instructions are required",
+      }),
+    };
+  }
+  try {
+    const { data } = await axios.post(
+      \`\${BACKEND}/recipes\`,
+      { name, description, ingredients, instructions, prepTime, servings },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: event.headers?.authorization ?? "",
+        },
+      }
+    );
+    return {
+      statusCode: 201,
+      headers: {
+        "Content-Type": "application/json",
+        Location: \`/recipes/\${data.id}\`,
+      },
+      body: JSON.stringify(data),
+    };
+  } catch (err) {
+    return {
+      statusCode: err.response?.status || 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        error: err.response?.data || "Failed to create recipe",
+      }),
+    };
+  }
+};`;
+
+const deleteRecipeCode = `import axios from "axios";
+const BACKEND = \`http://\${process.env.EC2_PRIVATE_IP}:8080/api\`;
+
+export const handler = async (event) => {
+  const id = event.pathParameters?.id;
+
+  if (!id) {
+    return {
+      statusCode: 400,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Recipe id is required" }),
+    };
+  }
+
+  try {
+    await axios.delete(\`\${BACKEND}/recipes/\${id}\`, {
+      headers: {
+        Authorization: event.headers?.authorization ?? "",
+      },
+    });
+
+    return {
+      statusCode: 204,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Recipe deleted successfully" }),
+    };
+  } catch (err) {
+    if (err.response?.status === 404) {
+      return {
+        statusCode: 404,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "Recipe not found" }),
+      };
+    }
+
+    return {
+      statusCode: err.response?.status || 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        error: err.response?.data || "Failed to delete recipe",
+      }),
+    };
+  }
+};`;
+
+
+
 /* ── PAGE ── */
 
 export default function LambdaProxy() {
@@ -379,51 +477,7 @@ export const handler = async (event) => {
           </code>{" "}
           med den skapade resursen.
         </p>
-        <CodeBlock
-          lang="node.js"
-          code={`import axios from "axios";
-
-const BACKEND = "http://<EC2-IP>:8080";
-
-export const handler = async (event) => {
-  // Body från API Gateway är alltid en sträng — måste parsas
-  const body = JSON.parse(event.body ?? "{}");
-  const { productId, quantity, customerId } = body;
-
-  // Validera obligatoriska fält innan vi anropar Spring Boot
-  if (!productId || !quantity || !customerId) {
-    return {
-      statusCode: 400,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        error: "productId, quantity och customerId krävs",
-      }),
-    };
-  }
-
-  // Skicka POST till Spring Boot med axios
-  const { data, status } = await axios.post(
-    \`\${BACKEND}/orders\`,
-    { productId, quantity, customerId },   // axios serialiserar till JSON automatiskt
-    {
-      headers: {
-        "Content-Type": "application/json",
-        // Vidarebefordra Authorization-headern om Spring Boot kräver det
-        Authorization: event.headers?.authorization ?? "",
-      },
-    }
-  );
-
-  return {
-    statusCode: 201,                        // 201 = ny resurs skapades
-    headers: {
-      "Content-Type": "application/json",
-      Location: \`/orders/\${data.id}\`,      // peka på den skapade resursen
-    },
-    body: JSON.stringify(data),
-  };
-};`}
-        />
+       <CodeBlock lang="node.js" code={createRecipeCode} />
         <Notice variant="warning">
           <strong>axios vs fetch vid POST:</strong> axios serialiserar
           body-objektet till JSON automatiskt och sätter{" "}
@@ -462,56 +516,7 @@ export const handler = async (event) => {
           </code>{" "}
           vid framgång — utan body.
         </p>
-        <CodeBlock
-          lang="node.js"
-          code={`import axios from "axios";
-
-const BACKEND = "http://<EC2-IP>:8080";
-
-export const handler = async (event) => {
-  // Hämta id från URL — API Gateway extraherar :id från /orders/:id
-  const orderId = event.pathParameters?.id;
-
-  if (!orderId) {
-    return {
-      statusCode: 400,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "order-id saknas i URL:en" }),
-    };
-  }
-
-  try {
-    // Skicka DELETE till Spring Boot med axios
-    await axios.delete(\`\${BACKEND}/orders/\${orderId}\`, {
-      headers: {
-        Authorization: event.headers?.authorization ?? "",
-      },
-    });
-
-    // 204 No Content — framgång, men inget att returnera
-    return {
-      statusCode: 204,
-      body: "",                             // tomt body är obligatoriskt för 204
-    };
-
-  } catch (err) {
-    // axios kastar fel vid 4xx/5xx — fånga och returnera rätt statuskod
-    if (axios.isAxiosError(err) && err.response?.status === 404) {
-      return {
-        statusCode: 404,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: \`Order \${orderId} hittades inte\` }),
-      };
-    }
-    // Okänt fel — returnera 500
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "Internt serverfel" }),
-    };
-  }
-};`}
-        />
+      <CodeBlock lang="node.js" code={deleteRecipeCode} />
         <Notice variant="danger">
           <strong>axios och felhantering:</strong> Till skillnad från fetch
           kastar axios automatiskt ett undantag vid HTTP-statuskoder 4xx och

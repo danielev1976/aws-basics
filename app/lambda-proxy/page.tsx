@@ -148,7 +148,7 @@ function Divider() {
 
 export default function LambdaProxy() {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-4xl mx-auto px-6 py-52">
       {/* Hero */}
       <div className="mb-8">
         <span className="inline-block bg-[#FF9900] text-[#232F3E] text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded mb-3">

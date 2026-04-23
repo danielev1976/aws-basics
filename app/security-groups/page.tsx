@@ -663,15 +663,7 @@ export default function SecurityGroups() {
         till EC2 på port 3000.
       </p>
 
-      {/* Lambda image */}
-      <div className="flex justify-center mb-4">
-        <img
-          src="https://upload.wikimedia.org/wikipedia/commons/e/e9/AWS_Simple_Icons_Compute_AWS_Lambda.svg"
-          alt="AWS Lambda"
-          className="w-16 h-16 opacity-80"
-        />
-      </div>
-
+   
       <ConceptCard
         badge="Lambda VPC"
         badgeClass="bg-purple-100 text-purple-700"
@@ -798,13 +790,15 @@ export default function SecurityGroups() {
       </p>
 
       {/* RDS image */}
-      <div className="flex justify-center mb-4">
-        <img
-          src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Amazon-Relational-Database-Service-RDS.svg/256px-Amazon-Relational-Database-Service-RDS.svg.png"
-          alt="Amazon RDS"
-          className="w-16 h-16 opacity-80"
+ {/*      <div className="flex justify-center mb-4">
+        <Image
+          src="/amazon-s3.png"
+          alt="Amazon S3"
+          width={128}
+          height={64}
+          className="opacity-80"
         />
-      </div>
+      </div> */}
 
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
         <div className="text-sm font-bold text-gray-800 mb-4">
@@ -904,11 +898,7 @@ export default function SecurityGroups() {
       {/* S3 section */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
         <div className="flex items-center gap-4 mb-4">
-          <img
-            src="https://upload.wikimedia.org/wikipedia/commons/b/bc/Amazon-S3-Logo.svg"
-            alt="Amazon S3"
-            className="w-10 h-10 opacity-80 shrink-0"
-          />
+     
           <div>
             <div className="text-sm font-bold text-gray-800">
               S3 — Ingen Security Group

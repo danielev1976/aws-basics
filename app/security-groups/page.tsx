@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ReactNode } from "react";
 
 /* ── TYPES ── */
@@ -167,8 +168,8 @@ export default function SecurityGroups() {
         </h1>
         <p className="text-gray-500 text-sm max-w-xl leading-relaxed">
           Security Groups är din första försvarslinje i AWS. De styr exakt
-          vilken trafik som når EC2-instanser, Lambda-funktioner i VPC och
-          RDS-databaser — på port- och protokollnivå.
+          vilken trafik som når Lambda-funktioner i VPC, EC2 med Spring Boot,
+          och RDS-databaser — på port- och protokollnivå.
         </p>
       </div>
 
@@ -267,131 +268,291 @@ export default function SecurityGroups() {
       <SectionHeader
         number="2"
         title="Arkitektur"
-        highlight="EC2 + Lambda + RDS"
+        highlight="API GW → Lambda → EC2 → RDS + S3"
       />
 
       <p className="text-gray-500 text-sm mb-5 leading-relaxed">
-        En typisk tre-lagers arkitektur i AWS: EC2 (eller Lambda) exponerar ett
-        API mot internet, och kommunicerar sedan privat med en RDS-databas i ett
-        privat subnät. Varje lager har sin egen Security Group.
+        Trafiken flödar från internet via API Gateway. Varje HTTP-metod (GET,
+        POST, PUT, DELETE) är kopplad till sin <em>egen</em> Lambda-funktion.
+        Lambda kommunicerar sedan med EC2 som kör en Spring Boot-applikation på
+        port 8080. EC2 når i sin tur RDS-databasen och S3 för fillagring.
       </p>
+
+      <Image src="/aws_lambda_apigw_ec2_architecture.svg" alt="Arkitekturdiagram" width={800} height={400} className="mb-6 rounded-lg border" />
 
       {/* Architecture diagram */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
         <div className="text-sm font-bold text-gray-800 mb-5">
-          Tre Security Groups — ett lager vardera
+          Trafikflöde &amp; Security Groups — lager för lager
         </div>
 
-        {/* Layer 1: Internet */}
-        <div className="flex justify-center mb-2">
-          <div className="bg-gray-100 border border-gray-300 rounded-lg px-6 py-2 text-xs font-mono text-gray-500 font-semibold tracking-widest uppercase">
-            Internet / Klienter
+        {/* Layer 0: Internet */}
+        <div className="flex justify-center mb-1">
+          <div className="bg-gray-100 border border-gray-300 rounded-lg px-8 py-2.5 text-center">
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+              Internet / Klienter
+            </div>
+            <div className="text-[10px] text-gray-400 font-mono mt-0.5">
+              Browser, mobil, tredjepartstjänst
+            </div>
           </div>
         </div>
-        <div className="flex justify-center mb-2">
-          <div className="w-px h-6 bg-gray-300" />
+        <div className="flex justify-center">
+          <div className="w-px h-5 bg-gray-300" />
+        </div>
+        <div className="flex justify-center mb-1">
+          <div className="text-[10px] text-gray-400 font-mono bg-gray-50 border border-gray-200 rounded px-2 py-0.5">
+            HTTPS :443
+          </div>
+        </div>
+        <div className="flex justify-center">
+          <div className="w-px h-5 bg-gray-300" />
         </div>
 
-        {/* Layer 2: EC2 / Lambda */}
-        <div className="relative mb-2">
-          <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4">
-            <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-2">
-              SG-WEB — Public Subnet
+        {/* Layer 1: API Gateway */}
+        <div className="flex justify-center mb-1">
+          <div className="bg-purple-50 border-2 border-purple-300 rounded-xl px-8 py-3 text-center w-full max-w-sm">
+            <div className="text-[10px] font-bold text-purple-500 uppercase tracking-widest mb-1">
+              AWS Managed — ingen SG
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white border border-blue-200 rounded-lg p-3 text-center">
-                <div className="text-xs font-bold text-blue-700 mb-1">
-                  EC2-instans
+            <div className="text-xs font-bold text-purple-800">
+              API Gateway (HTTP API)
+            </div>
+            <div className="text-[11px] text-purple-600 font-mono mt-0.5">
+              api.execute-api.eu-west-1.amazonaws.com
+            </div>
+            <div className="mt-2 text-[10px] bg-purple-100 text-purple-700 rounded px-2 py-0.5 inline-block">
+              Routar anrop → Lambda via IAM
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-center">
+          <div className="w-px h-5 bg-gray-300" />
+        </div>
+        <div className="flex justify-center mb-1">
+          <div className="text-[10px] text-gray-400 font-mono bg-gray-50 border border-gray-200 rounded px-2 py-0.5">
+            Lambda trigger (ingen nätverksport — IAM-baserat)
+          </div>
+        </div>
+        <div className="flex justify-center">
+          <div className="w-px h-5 bg-gray-300" />
+        </div>
+
+        {/* Layer 2: Lambda — one per method */}
+        <div className="bg-indigo-50 border-2 border-indigo-300 rounded-xl p-4 mb-1">
+          <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-2">
+            SG-LAMBDA — Private Subnet — en Lambda per HTTP-metod
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {(
+              [
+                {
+                  method: "GET",
+                  color: "bg-blue-100 text-blue-700 border-blue-200",
+                  fn: "getUsersHandler",
+                },
+                {
+                  method: "POST",
+                  color: "bg-green-100 text-green-700 border-green-200",
+                  fn: "createUserHandler",
+                },
+                {
+                  method: "PUT",
+                  color: "bg-amber-100 text-amber-700 border-amber-200",
+                  fn: "updateUserHandler",
+                },
+                {
+                  method: "DELETE",
+                  color: "bg-red-100 text-red-700 border-red-200",
+                  fn: "deleteUserHandler",
+                },
+              ] as const
+            ).map((l) => (
+              <div
+                key={l.method}
+                className={`bg-white border rounded-lg p-2 text-center ${l.color.split(" ")[2]}`}
+              >
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${l.color}`}
+                >
+                  {l.method}
+                </span>
+                <div className="text-[10px] text-gray-500 font-mono mt-1.5 leading-tight">
+                  {l.fn}
                 </div>
-                <div className="text-[11px] text-gray-500 font-mono">
-                  Node.js / Express
-                </div>
-                <div className="mt-2 space-y-1">
-                  <div className="text-[10px] bg-blue-100 text-blue-600 rounded px-1.5 py-0.5 font-mono">
-                    :80 / :443 ← 0.0.0.0/0
-                  </div>
-                  <div className="text-[10px] bg-amber-100 text-amber-600 rounded px-1.5 py-0.5 font-mono">
-                    :22 ← din IP /32
-                  </div>
+                <div className="text-[10px] text-indigo-500 mt-1 font-mono">
+                  → :8080
                 </div>
               </div>
-              <div className="bg-white border border-blue-200 rounded-lg p-3 text-center">
-                <div className="text-xs font-bold text-purple-700 mb-1">
-                  Lambda (VPC)
-                </div>
-                <div className="text-[11px] text-gray-500 font-mono">
-                  REST handler
-                </div>
-                <div className="mt-2 space-y-1">
-                  <div className="text-[10px] bg-purple-100 text-purple-600 rounded px-1.5 py-0.5 font-mono">
-                    Inbound: API Gateway
-                  </div>
-                  <div className="text-[10px] bg-green-100 text-green-600 rounded px-1.5 py-0.5 font-mono">
-                    Outbound: SG-RDS :5432
-                  </div>
-                </div>
-              </div>
+            ))}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1">
+            <div className="text-[10px] bg-gray-100 text-gray-600 rounded px-1.5 py-0.5 font-mono">
+              Inbound: ingen
+            </div>
+            <div className="text-[10px] bg-indigo-100 text-indigo-600 rounded px-1.5 py-0.5 font-mono">
+              Outbound → SG-EC2 :8080
+            </div>
+            <div className="text-[10px] bg-purple-100 text-purple-600 rounded px-1.5 py-0.5 font-mono">
+              Alla 4 delar samma SG-LAMBDA
             </div>
           </div>
         </div>
-
-        <div className="flex justify-center mb-2">
-          <div className="flex flex-col items-center">
-            <div className="w-px h-4 bg-gray-300" />
-            <div className="text-[10px] text-gray-400 font-mono px-2">
-              Port 5432 (PostgreSQL) — bara från SG-WEB
-            </div>
-            <div className="w-px h-4 bg-gray-300" />
+        <div className="flex justify-center">
+          <div className="w-px h-5 bg-gray-300" />
+        </div>
+        <div className="flex justify-center mb-1">
+          <div className="text-[10px] text-gray-400 font-mono bg-gray-50 border border-gray-200 rounded px-2 py-0.5">
+            HTTP :8080 — Spring Boot internt i VPC
           </div>
         </div>
+        <div className="flex justify-center">
+          <div className="w-px h-5 bg-gray-300" />
+        </div>
 
-        {/* Layer 3: RDS */}
-        <div className="bg-green-50 border-2 border-green-300 rounded-xl p-4">
-          <div className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-2">
-            SG-RDS — Private Subnet
+        {/* Layer 3: EC2 Spring Boot */}
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-1">
+          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-2">
+            SG-EC2 — Private Subnet
           </div>
-          <div className="bg-white border border-green-200 rounded-lg p-3 text-center">
-            <div className="text-xs font-bold text-green-700 mb-1">
-              RDS (PostgreSQL / MySQL)
+          <div className="bg-white border border-blue-200 rounded-lg p-3 text-center">
+            <div className="text-xs font-bold text-blue-700 mb-1">
+              EC2-instans — Spring Boot
             </div>
             <div className="text-[11px] text-gray-500 font-mono">
-              my-app-db.cluster-xxx.eu-west-1.rds.amazonaws.com
+              java -jar myapp.jar · port 8080
             </div>
-            <div className="mt-2">
-              <div className="text-[10px] bg-green-100 text-green-700 rounded px-1.5 py-0.5 font-mono inline-block">
-                :5432 ← SG-WEB (Security Group som källa — inte IP)
+            <div className="mt-2 flex flex-wrap gap-1 justify-center">
+              <div className="text-[10px] bg-blue-100 text-blue-600 rounded px-1.5 py-0.5 font-mono">
+                Inbound :8080 ← SG-LAMBDA
+              </div>
+              <div className="text-[10px] bg-amber-100 text-amber-600 rounded px-1.5 py-0.5 font-mono">
+                SSH :22 ← din IP /32
+              </div>
+              <div className="text-[10px] bg-green-100 text-green-600 rounded px-1.5 py-0.5 font-mono">
+                Outbound → SG-RDS :5432
+              </div>
+              <div className="text-[10px] bg-orange-100 text-orange-600 rounded px-1.5 py-0.5 font-mono">
+                Outbound → S3 via HTTPS
               </div>
             </div>
           </div>
         </div>
 
-        <Notice variant="danger">
-          <strong>RDS ska aldrig ha en publik IP.</strong> Placera alltid RDS i
-          ett privat subnät och låt bara applikationens Security Group (SG-WEB)
-          nå databasen. En öppen databas mot internet är ett kritiskt
-          säkerhetshål.
+        {/* Layer 4: RDS + S3 side by side */}
+        <div className="flex justify-center">
+          <div className="w-px h-5 bg-gray-300" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 mt-1">
+          <div className="flex flex-col items-center">
+            <div className="text-[10px] text-gray-400 font-mono bg-gray-50 border border-gray-200 rounded px-2 py-0.5 mb-1">
+              TCP :5432 ← SG-EC2
+            </div>
+            <div className="w-px h-4 bg-gray-300 mb-1" />
+            <div className="bg-green-50 border-2 border-green-300 rounded-xl p-3 w-full text-center">
+              <div className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">
+                SG-RDS — Private Subnet
+              </div>
+              <div className="text-xs font-bold text-green-700">
+                RDS PostgreSQL
+              </div>
+              <div className="text-[10px] text-green-600 font-mono mt-1">
+                :5432 ← SG-EC2 only
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="text-[10px] text-gray-400 font-mono bg-gray-50 border border-gray-200 rounded px-2 py-0.5 mb-1">
+              HTTPS via S3 VPC Endpoint
+            </div>
+            <div className="w-px h-4 bg-gray-300 mb-1" />
+            <div className="bg-orange-50 border-2 border-orange-300 rounded-xl p-3 w-full text-center">
+              <div className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-1">
+                Ingen SG — AWS Managed
+              </div>
+              <div className="text-xs font-bold text-orange-700">S3 Bucket</div>
+              <div className="text-[10px] text-orange-600 font-mono mt-1">
+                IAM-policy styr åtkomst
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Notice variant="info">
+          <strong>API Gateway har ingen Security Group</strong> — det är en helt
+          hanterad AWS-tjänst utanför VPC. Lambda triggas via ett IAM-baserat
+          anrop, inte via en nätverksport. EC2 och RDS däremot lever i ditt VPC
+          och skyddas av Security Groups.
         </Notice>
       </div>
 
       <Divider />
 
-      {/* ══════════════════════════════
-          DEL 3 — SG-WEB: EC2
-      ══════════════════════════════ */}
-      <SectionHeader number="3" title="SG-WEB" highlight="— EC2 / Webbserver" />
+      <SectionHeader
+        number="3"
+        title="SG-EC2"
+        highlight="— Spring Boot på port 8080"
+      />
 
       <p className="text-gray-500 text-sm mb-5 leading-relaxed">
-        EC2-instansen är det publikt tillgängliga lagret. Den tar emot
-        HTTP/HTTPS-trafik från hela internet, men SSH-åtkomst begränsas till din
-        specifika IP-adress.
+        EC2-instansen kör en Spring Boot-applikation som lyssnar på port 8080
+        (Spring Boots standardport). Den är inte publikt exponerad — bara Lambda
+        får nå den via SG-LAMBDA. SSH-åtkomst för administration begränsas till
+        din IP.
       </p>
+
+
+      {/* Spring Boot port note */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
+        <div className="text-sm font-bold text-gray-800 mb-3">
+          Spring Boot &amp; port 8080 — varför just den porten?
+        </div>
+        <p className="text-sm text-gray-600 leading-relaxed mb-4">
+          Spring Boot använder port 8080 som default. Det är en konvention för
+          att undvika konflikt med port 80 (kräver root-rättigheter på Linux). I
+          Security Group-regeln matchar du exakt den port Spring Boot lyssnar
+          på.
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          {(
+            [
+              {
+                label: "Port 80",
+                note: "HTTP — kräver root, ej rekommenderat för app",
+                color: "bg-gray-50 border-gray-200 text-gray-600",
+              },
+              {
+                label: "Port 8080",
+                note: "Spring Boot default — används i SG-EC2",
+                color: "bg-blue-50 border-blue-200 text-blue-800",
+              },
+              {
+                label: "server.port=XXXX",
+                note: "Kan ändras i application.properties",
+                color: "bg-amber-50 border-amber-200 text-amber-800",
+              },
+            ] as const
+          ).map((item) => (
+            <div
+              key={item.label}
+              className={`border rounded-lg p-3 ${item.color}`}
+            >
+              <div className="font-mono text-xs font-bold mb-1">
+                {item.label}
+              </div>
+              <div className="text-xs leading-snug opacity-80">{item.note}</div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
         <div className="text-sm font-bold text-gray-800 mb-1">
-          SG-WEB — Inbound Rules
+          SG-EC2 — Inbound Rules
         </div>
         <p className="text-xs text-gray-400 mb-4">
-          Trafik som tillåts <em>in</em> till EC2-instansen
+          EC2 tar bara emot trafik från Lambda på port 8080 och SSH från din IP
+          — aldrig direkt från internet
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -411,33 +572,19 @@ export default function SecurityGroups() {
             </thead>
             <tbody>
               <RuleRow
+                type="Custom TCP"
+                protocol="TCP"
+                port="8080"
+                source="SG-LAMBDA"
+                description="Alla 4 Lambda-funktioner anropar Spring Boot på samma port"
+                highlight
+              />
+              <RuleRow
                 type="SSH"
                 protocol="TCP"
                 port="22"
                 source="Din IP /32"
-                description="SSH-åtkomst — bara du"
-                highlight
-              />
-              <RuleRow
-                type="HTTP"
-                protocol="TCP"
-                port="80"
-                source="0.0.0.0/0"
-                description="Webb-trafik från alla — omdirigera till 443"
-              />
-              <RuleRow
-                type="HTTPS"
-                protocol="TCP"
-                port="443"
-                source="0.0.0.0/0"
-                description="Krypterad webb-trafik från alla"
-              />
-              <RuleRow
-                type="Custom TCP"
-                protocol="TCP"
-                port="3000"
-                source="0.0.0.0/0"
-                description="Node.js dev-server (ta bort i produktion)"
+                description="Admin-åtkomst — bara du, aldrig 0.0.0.0/0"
               />
             </tbody>
           </table>
@@ -445,17 +592,19 @@ export default function SecurityGroups() {
         <div className="flex items-center gap-2 mt-3">
           <span className="w-3 h-3 rounded-sm bg-amber-100 border border-amber-300 shrink-0" />
           <span className="text-xs text-gray-400">
-            SSH begränsas alltid till /32 — aldrig mot 0.0.0.0/0
+            Alla 4 Lambda-funktioner (GET/POST/PUT/DELETE) delar SG-LAMBDA — en
+            enda inbound-regel på port 8080 täcker dem alla.
           </span>
         </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
         <div className="text-sm font-bold text-gray-800 mb-1">
-          SG-WEB — Outbound Rules
+          SG-EC2 — Outbound Rules
         </div>
         <p className="text-xs text-gray-400 mb-4">
-          Trafik som EC2-instansen får skicka <em>ut</em>
+          EC2 ansluter utåt till RDS och S3 — ingenting annat behövs i
+          produktion
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -475,18 +624,11 @@ export default function SecurityGroups() {
             </thead>
             <tbody>
               <RuleRow
-                type="All traffic"
-                protocol="All"
-                port="All"
-                source="0.0.0.0/0"
-                description="Default — tillåt all utgående trafik"
-              />
-              <RuleRow
                 type="PostgreSQL"
                 protocol="TCP"
                 port="5432"
                 source="SG-RDS"
-                description="Kommunikation med RDS-databas"
+                description="Spring Boot DataSource ansluter till RDS"
                 highlight
               />
               <RuleRow
@@ -494,16 +636,16 @@ export default function SecurityGroups() {
                 protocol="TCP"
                 port="443"
                 source="0.0.0.0/0"
-                description="npm-paket, externa API:er, AWS-tjänster"
+                description="S3-anrop via AWS SDK / VPC Endpoint"
               />
             </tbody>
           </table>
         </div>
         <Notice variant="info">
-          <strong>Best practice:</strong> I produktion bör du begränsa outbound
-          till bara det du behöver — RDS-porten + HTTPS. Default "all traffic
-          out" är bekvämt men ger angripare mer spelrum om instansen
-          komprometteras.
+          <strong>S3 och Security Groups:</strong> S3 är en AWS-hanterad tjänst
+          utanför VPC — den har ingen Security Group. Åtkomst styrs med
+          IAM-roller och bucket policies. Använd ett S3 VPC Endpoint för att
+          hålla trafiken inom AWS-nätverket utan att gå via internet.
         </Notice>
       </div>
 
@@ -515,28 +657,38 @@ export default function SecurityGroups() {
       <SectionHeader number="4" title="SG-LAMBDA" highlight="— Lambda i VPC" />
 
       <p className="text-gray-500 text-sm mb-5 leading-relaxed">
-        Lambda-funktioner kör normalt utanför ett VPC och kan inte nå resurser i
-        ditt privata nätverk. Genom att placera Lambda <em>i</em> ett VPC kan
-        den kommunicera direkt med RDS — men det kräver en egen Security Group.
+        API Gateway triggar Lambda via ett IAM-baserat anrop — ingen
+        nätverksport. Men Lambda behöver en Security Group för att kunna nå EC2
+        inne i VPC. Lambda placeras i ett privat subnät och kommunicerar vidare
+        till EC2 på port 3000.
       </p>
+
+      {/* Lambda image */}
+      <div className="flex justify-center mb-4">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/commons/e/e9/AWS_Simple_Icons_Compute_AWS_Lambda.svg"
+          alt="AWS Lambda"
+          className="w-16 h-16 opacity-80"
+        />
+      </div>
 
       <ConceptCard
         badge="Lambda VPC"
         badgeClass="bg-purple-100 text-purple-700"
         title="Lambda i VPC"
         subtitle="Privat nätverkstillgång för serverlösa funktioner"
-        description="När Lambda placeras i ett VPC kopplas en ENI (Elastic Network Interface) till funktionen. Lambda tilldelas en privat IP i ditt subnät och kan nå RDS, ElastiCache och andra privata resurser. Nackdelen: utan NAT Gateway når Lambda inte internet — t.ex. för externa API-anrop."
+        description="API Gateway triggar Lambda via AWS internt — det kräver ingen inbound-regel i Security Group. Men för att Lambda ska kunna anropa EC2 inne i VPC måste Lambda ha en Security Group med en outbound-regel mot SG-EC2. Lambda placeras i ett privat subnät."
         col1Title="Passar när Lambda behöver"
         col1Items={[
-          "Ansluta till RDS eller ElastiCache",
-          "Nå interna mikrotjänster i VPC",
+          "Anropa EC2 eller interna tjänster i VPC",
+          "Nå RDS eller ElastiCache direkt",
           "Kommunicera med on-premises via VPN",
           "Strikt nätverksisolering av känslig data",
         ]}
         col2Title="Kräver i VPC-läge"
         col2Items={[
           "Minst 2 privata subnät (olika AZ)",
-          "NAT Gateway för internet-utgående",
+          "NAT Gateway om Lambda behöver internet",
           "Rätt IAM-behörigheter (ec2:CreateNetworkInterface)",
           "Tillräckligt med lediga IP-adresser i subnätet",
         ]}
@@ -547,8 +699,8 @@ export default function SecurityGroups() {
           SG-LAMBDA — Inbound Rules
         </div>
         <p className="text-xs text-gray-400 mb-4">
-          Lambda i VPC behöver sällan inbound-regler — API Gateway anropar
-          Lambda via AWS internt, inte via VPC-nätverket
+          API Gateway anropar Lambda via IAM — inte via ett nätverksgränssnitt.
+          Inga inbound-regler behövs.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -582,7 +734,7 @@ export default function SecurityGroups() {
           SG-LAMBDA — Outbound Rules
         </div>
         <p className="text-xs text-gray-400 mb-4">
-          Det kritiska: Lambda måste kunna nå ut till RDS
+          Lambda anropar EC2 på port 3000 inuti VPC
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -602,19 +754,12 @@ export default function SecurityGroups() {
             </thead>
             <tbody>
               <RuleRow
-                type="PostgreSQL"
+                type="Custom TCP"
                 protocol="TCP"
-                port="5432"
-                source="SG-RDS"
-                description="Lambda ansluter till RDS-databasen"
+                port="3000"
+                source="SG-EC2"
+                description="Lambda anropar EC2-appservern i VPC"
                 highlight
-              />
-              <RuleRow
-                type="MySQL/Aurora"
-                protocol="TCP"
-                port="3306"
-                source="SG-RDS"
-                description="Alternativt om du kör MySQL"
               />
               <RuleRow
                 type="HTTPS"
@@ -627,10 +772,10 @@ export default function SecurityGroups() {
           </table>
         </div>
         <Notice variant="warning">
-          <strong>Connection pooling:</strong> Lambda startar en ny
-          databasanslutning vid varje cold start. Med många samtida anrop kan du
-          tömma RDS connection pool. Använd RDS Proxy som buffer mellan Lambda
-          och databasen för att undvika detta.
+          <strong>API Gateway har ingen Security Group.</strong> Det är en fullt
+          hanterad tjänst som lever utanför ditt VPC. Anropet till Lambda är
+          IAM-baserat och syns aldrig som nätverkstrafik i Security
+          Group-loggar.
         </Notice>
       </div>
 
@@ -646,10 +791,20 @@ export default function SecurityGroups() {
       />
 
       <p className="text-gray-500 text-sm mb-5 leading-relaxed">
-        RDS-databasens Security Group är den viktigaste att konfigurera korrekt.
-        Den ska <strong>enbart</strong> tillåta trafik från applikationslagret —
-        aldrig från internet.
+        RDS-databasens Security Group är den viktigaste att konfigurera rätt.
+        Den ska <strong>enbart</strong> tillåta trafik från EC2:s Security Group
+        (SG-EC2) — aldrig från internet, aldrig från Lambda direkt i denna
+        arkitektur.
       </p>
+
+      {/* RDS image */}
+      <div className="flex justify-center mb-4">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Amazon-Relational-Database-Service-RDS.svg/256px-Amazon-Relational-Database-Service-RDS.svg.png"
+          alt="Amazon RDS"
+          className="w-16 h-16 opacity-80"
+        />
+      </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
         <div className="text-sm font-bold text-gray-800 mb-4">
@@ -657,9 +812,8 @@ export default function SecurityGroups() {
         </div>
         <p className="text-sm text-gray-600 leading-relaxed mb-4">
           Istället för att ange en IP-adress som källa pekar du på{" "}
-          <em>en annan Security Group</em>. Det innebär att bara resurser som
-          tillhör den angivna Security Group (SG-WEB eller SG-LAMBDA) får
-          ansluta — oavsett vad deras IP råkar vara.
+          <em>SG-EC2</em>. Det innebär att bara resurser som tillhör EC2:s
+          Security Group får ansluta — oavsett vad deras IP råkar vara.
         </p>
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -686,9 +840,9 @@ export default function SecurityGroups() {
             </div>
             <ul className="space-y-1.5">
               {[
-                "Source: sg-0abc123def (SG-WEB)",
+                "Source: sg-0abc123 (SG-EC2)",
                 "Fungerar även om EC2 byts ut",
-                "Skalbart — alla nya instanser i SG-WEB får åtkomst",
+                "Skalbart — alla nya EC2-instanser i SG-EC2 får åtkomst",
                 "Självdokumenterande — tydlig avsikt",
               ].map((item) => (
                 <li key={item} className="text-xs text-gray-600 flex gap-1.5">
@@ -706,8 +860,8 @@ export default function SecurityGroups() {
           SG-RDS — Inbound Rules
         </div>
         <p className="text-xs text-gray-400 mb-4">
-          Databasen accepterar <em>bara</em> trafik från applikationslagrets
-          Security Groups
+          Databasen accepterar <em>bara</em> trafik från EC2-lagrets Security
+          Group
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -730,16 +884,8 @@ export default function SecurityGroups() {
                 type="PostgreSQL"
                 protocol="TCP"
                 port="5432"
-                source="SG-WEB"
-                description="EC2-instansen får ansluta"
-                highlight
-              />
-              <RuleRow
-                type="PostgreSQL"
-                protocol="TCP"
-                port="5432"
-                source="SG-LAMBDA"
-                description="Lambda-funktionen får ansluta"
+                source="SG-EC2"
+                description="EC2-instansen får ansluta till databasen"
                 highlight
               />
             </tbody>
@@ -755,7 +901,52 @@ export default function SecurityGroups() {
         </Notice>
       </div>
 
-      {/* RDS Ports reference */}
+      {/* S3 section */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
+        <div className="flex items-center gap-4 mb-4">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/b/bc/Amazon-S3-Logo.svg"
+            alt="Amazon S3"
+            className="w-10 h-10 opacity-80 shrink-0"
+          />
+          <div>
+            <div className="text-sm font-bold text-gray-800">
+              S3 — Ingen Security Group
+            </div>
+            <div className="text-xs text-gray-400">
+              Åtkomst styrs via IAM-roller och bucket policies
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-gray-600 leading-relaxed mb-4">
+          S3 är en globalt hanterad AWS-tjänst som lever utanför VPC. Den har
+          ingen Security Group. Istället kontrolleras åtkomsten av IAM:
+          EC2-instansen tilldelas en IAM Role med rätt S3-behörighet, och bucket
+          policyn kan begränsa vilka roller och konton som har åtkomst.
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <InfoBlock
+            title="EC2 → S3 kräver"
+            items={[
+              "IAM Role kopplad till EC2-instansen",
+              "Policy med s3:GetObject, s3:PutObject etc.",
+              "S3 VPC Endpoint (rekommenderas) för privat trafik",
+              "Bucket policy som tillåter IAM Role",
+            ]}
+          />
+          <InfoBlock
+            title="S3 VPC Endpoint — varför?"
+            items={[
+              "Trafiken lämnar aldrig AWS-nätverket",
+              "Ingen kostnad för NAT Gateway-datatransfer",
+              "Bucket policy kan kräva VPC Endpoint som källa",
+              "Lägre latens och högre säkerhet",
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* Ports reference */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
         <div className="text-sm font-bold text-gray-800 mb-4">
           Standardportar för vanliga RDS-motorer
@@ -814,13 +1005,13 @@ export default function SecurityGroups() {
       <SectionHeader
         number="6"
         title="RDS Proxy"
-        highlight="+ Lambda — Connection Pooling"
+        highlight="+ EC2 — Connection Pooling"
       />
 
       <p className="text-gray-500 text-sm mb-5 leading-relaxed">
-        Lambda öppnar en ny databasanslutning vid varje anrop. Vid hög
-        belastning kan det snabbt tömma RDS connection pool. RDS Proxy löser
-        detta genom att sitta som mellanhand och poola anslutningarna.
+        EC2 håller typiskt en connection pool mot RDS. Vid skalning med flera
+        EC2-instanser kan antalet öppna anslutningar snabbt bli för högt. RDS
+        Proxy sitter som mellanhand och hanterar poolning centralt.
       </p>
 
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
@@ -834,10 +1025,10 @@ export default function SecurityGroups() {
             </div>
             <div className="flex flex-col gap-2 mb-3">
               {[
-                "Lambda #1 → ny DB-anslutning",
-                "Lambda #2 → ny DB-anslutning",
-                "Lambda #3 → ny DB-anslutning",
-                "Lambda #100 → DB: Too many connections!",
+                "EC2 #1 → 10 DB-anslutningar",
+                "EC2 #2 → 10 DB-anslutningar",
+                "EC2 #3 → 10 DB-anslutningar",
+                "RDS: Too many connections!",
               ].map((item, i) => (
                 <div
                   key={item}
@@ -848,8 +1039,8 @@ export default function SecurityGroups() {
               ))}
             </div>
             <div className="text-xs text-red-700">
-              RDS har en begränsad connection pool — en stor Lambda-burst kan
-              krascha databasen
+              Varje EC2-instans håller sin egen pool — vid skalning tömmer de
+              tillsammans RDS connection limit
             </div>
           </div>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -858,10 +1049,10 @@ export default function SecurityGroups() {
             </div>
             <div className="flex flex-col gap-2 mb-3">
               {[
-                "Lambda #1 → RDS Proxy",
-                "Lambda #2 → RDS Proxy",
-                "Lambda #3 → RDS Proxy",
-                "RDS Proxy → 5 poolade DB-anslutningar",
+                "EC2 #1 → RDS Proxy",
+                "EC2 #2 → RDS Proxy",
+                "EC2 #3 → RDS Proxy",
+                "RDS Proxy → 10 poolade DB-anslutningar",
               ].map((item, i) => (
                 <div
                   key={item}
@@ -872,8 +1063,8 @@ export default function SecurityGroups() {
               ))}
             </div>
             <div className="text-xs text-green-700">
-              Proxy återanvänder anslutningar — databasen ser bara ett fåtal
-              kopplingar oavsett Lambda-volym
+              Proxy delar på anslutningar — RDS ser ett konstant litet antal
+              connections oavsett hur många EC2-instanser som kör
             </div>
           </div>
         </div>
@@ -885,11 +1076,11 @@ export default function SecurityGroups() {
             {(
               [
                 {
-                  from: "SG-LAMBDA",
+                  from: "SG-EC2",
                   arrow: "→",
                   to: "SG-PROXY",
                   port: ":5432",
-                  desc: "Lambda ansluter till Proxy",
+                  desc: "EC2 ansluter till Proxy",
                 },
                 {
                   from: "SG-PROXY",
@@ -902,9 +1093,9 @@ export default function SecurityGroups() {
             ).map((row) => (
               <div
                 key={row.from}
-                className="flex items-center gap-2 text-xs font-mono"
+                className="flex items-center gap-2 text-xs font-mono flex-wrap"
               >
-                <span className="bg-purple-100 text-purple-700 rounded px-2 py-1">
+                <span className="bg-blue-100 text-blue-700 rounded px-2 py-1">
                   {row.from}
                 </span>
                 <span className="text-gray-400">{row.arrow}</span>
@@ -915,7 +1106,7 @@ export default function SecurityGroups() {
                 <span className="bg-green-100 text-green-700 rounded px-2 py-1">
                   {row.to === "SG-RDS" ? "RDS" : row.to} {row.port}
                 </span>
-                <span className="text-gray-400 font-sans ml-2">{row.desc}</span>
+                <span className="text-gray-400 font-sans ml-1">{row.desc}</span>
               </div>
             ))}
           </div>
@@ -931,12 +1122,12 @@ export default function SecurityGroups() {
         </h2>
         {(
           [
-            "Varför är Security Groups stateful, och vad innebär det konkret när du konfigurerar en inbound SSH-regel?",
-            "Du skapar en RDS-databas och vill att din EC2-instans ska nå den. Ska du ange EC2-instansens IP eller SG-WEB som källa i SG-RDS — och varför?",
+            "API Gateway har ingen Security Group — varför inte, och hur triggas Lambda om inte via en nätverksport?",
+            "Lambda anropar EC2 på port 3000. Vilka Security Group-regler behövs i SG-LAMBDA (outbound) och SG-EC2 (inbound)?",
             "En kollega placerar RDS i ett publikt subnät och öppnar port 5432 mot 0.0.0.0/0 för att förenkla lokalt testande. Vilka risker innebär det?",
-            "Lambda i VPC kan inte längre nå externa API:er efter att du lade den i ett privat subnät. Vad saknas i infrastrukturen?",
-            "Vad är RDS Proxy och varför är det särskilt viktigt när Lambda anropar RDS?",
-            "Du har tre miljöer: dev, staging, prod. Bör de dela Security Groups eller ha egna — och varför?",
+            "Varför ska du ange SG-EC2 som källa i SG-RDS istället för EC2-instansens privata IP-adress?",
+            "S3 har ingen Security Group — hur begränsar du då vilken EC2-instans som får läsa från din bucket?",
+            "Du skalar upp till 5 EC2-instanser. Hur påverkar det Security Group-konfigurationen för SG-RDS, och varför är RDS Proxy relevant här?",
           ] as const
         ).map((q, i) => (
           <div
@@ -983,24 +1174,28 @@ export default function SecurityGroups() {
               def: "Peka på en annan Security Group som källa istället för IP — skalbart och självdokumenterande",
             },
             {
+              term: "API Gateway",
+              def: "AWS-hanterad tjänst utanför VPC — ingen SG. Triggar Lambda via IAM-baserat anrop",
+            },
+            {
               term: "VPC",
-              def: "Virtual Private Cloud — isolerat nätverksutrymme i AWS där dina resurser körs",
+              def: "Virtual Private Cloud — isolerat nätverksutrymme i AWS där EC2, Lambda och RDS körs",
             },
             {
               term: "Privat subnät",
-              def: "Subnät utan direkt internetanslutning — används för databaser och interna tjänster",
-            },
-            {
-              term: "Publikt subnät",
-              def: "Subnät med internetgateway — används för webbservrar och publika load balancers",
+              def: "Subnät utan direkt internetanslutning — används för EC2 (appserver), Lambda och RDS",
             },
             {
               term: "NAT Gateway",
               def: "Ger resurser i privata subnät utgående internetåtkomst utan att exponera dem inkommande",
             },
             {
+              term: "S3 VPC Endpoint",
+              def: "Privat anslutning från VPC till S3 — trafiken lämnar aldrig AWS-nätverket, ingen NAT-kostnad",
+            },
+            {
               term: "RDS Proxy",
-              def: "Hanterad databasproxy som pooler anslutningar — kritisk för Lambda + RDS-kombination",
+              def: "Hanterad databasproxy som pooler anslutningar — kritisk när flera EC2-instanser delar en databas",
             },
             {
               term: "NACL",
@@ -1012,11 +1207,11 @@ export default function SecurityGroups() {
             },
             {
               term: "Port 5432",
-              def: "Standardport för PostgreSQL och Aurora PostgreSQL — begränsa källan till SG-WEB/SG-LAMBDA",
+              def: "Standardport för PostgreSQL och Aurora PostgreSQL — begränsa källan till SG-EC2 i SG-RDS",
             },
             {
-              term: "Connection Pool",
-              def: "Uppsättning befintliga DB-anslutningar som återanvänds — viktigt för Lambda som öppnar många connections",
+              term: "IAM Role (EC2)",
+              def: "Tilldelas EC2-instansen och ger den behörighet att nå S3 utan att hantera access keys manuellt",
             },
           ] as const
         ).map((g) => (

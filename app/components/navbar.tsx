@@ -17,6 +17,7 @@ const navItems = [
   { label: "CI/CD", href: "/ci-cd" },
   { label: "Load Balancer", href: "/loadbalancer" },
   { label: "Lambda som proxy", href: "/lambda-proxy" },
+  {label: "Security Groups", href: "/security-groups"},
 ];
 
 export default function Navbar() {

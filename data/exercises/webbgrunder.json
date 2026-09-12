@@ -1,0 +1,75 @@
+{
+  "module": "webbgrunder",
+  "exercises": [
+    {
+      "id": "wg-verktyg-1",
+      "lesson": "verktyg-och-devtools",
+      "title": "Installera din verktygslåda",
+      "difficulty": "lätt",
+      "instructions": "Installera VS Code och lägg till tilläggen Live Server och Prettier. Öppna en tom mapp i VS Code och skapa en fil som heter index.html."
+    },
+    {
+      "id": "wg-verktyg-2",
+      "lesson": "verktyg-och-devtools",
+      "title": "Första commiten",
+      "difficulty": "lätt",
+      "instructions": "Initiera ett Git-repo i projektmappen, gör en första commit och skapa ett repo på GitHub att pusha till. Du kommer använda samma repo genom hela kursen."
+    },
+    {
+      "id": "wg-verktyg-3",
+      "lesson": "verktyg-och-devtools",
+      "title": "Utforska Elements-panelen",
+      "difficulty": "lätt",
+      "instructions": "Öppna valfri sida, öppna DevTools och hitta rubriken i Elements-panelen. Dubbelklicka på texten och ändra den. Ta en skärmdump innan du laddar om sidan."
+    },
+    {
+      "id": "wg-verktyg-4",
+      "lesson": "verktyg-och-devtools",
+      "title": "Läs en Network-logg",
+      "difficulty": "medel",
+      "instructions": "Öppna Network-fliken, ladda om sidan och svara: hur många requests gjordes, vilken var störst i storlek, och fanns det någon med statuskod som inte var 200?"
+    },
+    {
+      "id": "wg-internet-1",
+      "lesson": "internet-och-webblasare",
+      "title": "Från URL till skärm",
+      "difficulty": "lätt",
+      "instructions": "Skriv ner, med egna ord, de steg som sker mellan att du trycker Enter i adressfältet och att sidan syns på skärmen."
+    },
+    {
+      "id": "wg-internet-2",
+      "lesson": "internet-och-webblasare",
+      "title": "Hitta statuskoden",
+      "difficulty": "lätt",
+      "instructions": "Öppna Network-fliken i DevTools, besök en valfri sida och hitta requesten för huvuddokumentet (den översta). Vilken statuskod har den?"
+    },
+    {
+      "id": "wg-internet-3",
+      "lesson": "internet-och-webblasare",
+      "title": "Slå upp en IP-adress",
+      "difficulty": "medel",
+      "instructions": "Använd terminalen (nslookup <domän> eller ping <domän>) för att ta reda på IP-adressen bakom en webbplats du besöker ofta."
+    },
+    {
+      "id": "wg-filstruktur-1",
+      "lesson": "filstruktur",
+      "title": "Skapa projektstrukturen",
+      "difficulty": "lätt",
+      "instructions": "Skapa mapparna styles, scripts och assets/img i ditt projekt, samt filerna index.html, styles/main.css och scripts/main.js."
+    },
+    {
+      "id": "wg-filstruktur-2",
+      "lesson": "filstruktur",
+      "title": "Länka rätt",
+      "difficulty": "lätt",
+      "instructions": "Länka main.css och main.js till index.html med korrekta relativa sökvägar. Bekräfta i Network-fliken att båda filerna faktiskt laddas."
+    },
+    {
+      "id": "wg-filstruktur-3",
+      "lesson": "filstruktur",
+      "title": "Relativa sökvägar på djupet",
+      "difficulty": "medel",
+      "instructions": "Lägg en bild i assets/img och referera den dels från index.html i projektroten, dels från en ny sida du skapar i en undermapp, t.ex. pages/om.html. Sökvägen blir olika på de två ställena - varför?"
+    }
+  ]
+}
